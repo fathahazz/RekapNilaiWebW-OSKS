@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Rekap Nilai</title>
+<meta name="theme-color" content="#FAF7F0" />
+<meta name="description" content="Buku nilai digital untuk mahasiswa" />
+
+<!-- iOS Add to Home Screen -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Rekap Nilai" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="icon" href="icon-192.png" />
+<link rel="manifest" href="manifest.json" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --ink: #1E2A38;
+    --paper: #FAF7F0;
+    --line: #E4DFD0;
+    --muted: #8A8578;
+    --gold: #B8933D;
+    --sage: #8A9A5B;
+    --rose: #A6483C;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Inter', -apple-system, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: var(--sans);
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  input, button, select { font-family: inherit; font-size: 16px; }
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { opacity: 0.3; }
+
+  /* ---- MOBILE FIRST ---- */
+  .page { padding: 16px 14px 90px; max-width: 1200px; margin: 0 auto; }
+  header.top {
+    display: flex; flex-direction: column; gap: 14px;
+    border-bottom: 2px solid var(--ink); padding-bottom: 16px; margin-bottom: 16px;
+  }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; color: var(--muted); margin-bottom: 4px; }
+  h1.title { font-family: var(--serif); font-weight: 600; font-size: 30px; margin: 0; }
+  .statrow { display: flex; justify-content: space-between; gap: 8px; }
+  .stat { text-align: left; }
+  .stat .val { font-family: var(--mono); font-weight: 500; line-height: 1; font-size: 20px; }
+  .stat .val.big { font-size: 28px; color: var(--gold); }
+  .stat .lbl { font-family: var(--sans); font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  .body { display: flex; flex-direction: column; gap: 16px; }
+  .sidebar { width: 100%; }
+  .main { width: 100%; min-width: 0; }
+
+  .semscroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+  .semitem {
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line);
+    background: #fff; cursor: pointer; min-height: 44px;
+  }
+  .semitem.active { border: 1.5px solid var(--gold); }
+  .semitem input {
+    border: none; background: transparent; font-family: var(--sans);
+    font-size: 14px; font-weight: 500; color: var(--ink); outline: none; width: 8ch;
+  }
+  .semitem .count { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .addsem {
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    font-family: var(--sans); font-size: 13px; color: var(--gold);
+    background: #fff; border: 1px dashed var(--line); border-radius: 8px;
+    cursor: pointer; padding: 10px 14px; min-height: 44px;
+  }
+
+  details.dist { margin-top: 14px; }
+  details.dist summary {
+    display: flex; align-items: center; gap: 6px; list-style: none; cursor: pointer;
+    font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--ink);
+    padding: 8px 10px; background: #fff; border: 1px solid var(--line); border-radius: 8px;
+  }
+  details.dist summary::-webkit-details-marker { display: none; }
+  .donut-wrap { display: flex; align-items: center; gap: 16px; padding: 12px 4px; }
+  .donut { width: 90px; height: 90px; border-radius: 50%; flex-shrink: 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .legend .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+
+  .chartcard { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px 12px; margin-bottom: 18px; }
+  .chartcard .title { font-family: var(--serif); font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .barchart { display: flex; align-items: flex-end; gap: 10px; height: 140px; overflow-x: auto; padding-bottom: 4px; }
+  .bar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 34px; flex-shrink: 0; }
+  .bar-val { font-family: var(--mono); font-size: 10.5px; color: var(--muted); margin-bottom: 3px; }
+  .bar { width: 22px; border-radius: 4px 4px 0 0; }
+  .bar-label { font-family: var(--sans); font-size: 9.5px; color: var(--muted); margin-top: 5px; max-width: 46px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .cardsgrid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  .card { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px 14px; box-shadow: 0 1px 2px rgba(30,42,56,.05); }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+  .card-title {
+    font-family: var(--serif); font-size: 16px; font-weight: 600; border: none; outline: none;
+    flex: 1; min-width: 0; color: var(--ink); background: transparent; margin-bottom: 2px;
+  }
+  .card-del { background: none; border: none; color: var(--muted); cursor: pointer; padding: 10px; margin: -10px -6px -10px 0; flex-shrink: 0; }
+  .sksrow { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 12px; }
+  .sksrow input { width: 44px; font-family: var(--mono); font-size: 14px; border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; color: var(--ink); }
+  .sectionlbl { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; color: var(--muted); margin-top: 10px; margin-bottom: 4px; }
+  .ledgerrow { display: flex; align-items: baseline; gap: 4px; padding: 6px 0; }
+  .ledgerrow .lbl { font-family: var(--sans); font-size: 13.5px; white-space: nowrap; }
+  .ledgerrow .dots { flex: 1; border-bottom: 1px dotted var(--line); margin-bottom: 3px; }
+  .ledgerrow input { width: 46px; text-align: right; font-family: var(--mono); font-size: 15px; border: none; outline: none; color: var(--ink); background: transparent; padding: 4px 2px; }
+  .ledgerrow .suffix { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .weightsum { font-family: var(--mono); font-size: 10.5px; margin: 2px 0; }
+  .finalrow { display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid var(--ink); margin-top: 12px; padding-top: 8px; }
+  .finalrow .lbl { font-family: var(--serif); font-size: 13px; font-weight: 600; }
+  .finalrow .val { font-family: var(--mono); font-size: 22px; font-weight: 500; color: var(--gold); }
+
+  .addcard {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    min-height: 100px; border: 1.5px dashed var(--line); border-radius: 10px; background: transparent;
+    color: var(--muted); cursor: pointer; font-family: var(--sans); font-size: 14px; padding: 16px 0;
+  }
+  .delsem { display: flex; align-items: center; gap: 6px; margin-top: 20px; background: none; border: none; color: var(--muted); font-family: var(--sans); font-size: 12px; cursor: pointer; }
+
+  .install-banner {
+    position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 1000;
+    display: flex; align-items: center; gap: 10px; background: var(--ink); color: var(--paper);
+    border-radius: 12px; padding: 12px 12px 12px 16px; box-shadow: 0 6px 20px rgba(0,0,0,.25);
+    max-width: 480px; margin: 0 auto;
+  }
+  .install-banner .txt { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .install-banner .txt strong { font-size: 13.5px; }
+  .install-banner .txt span { font-size: 12px; color: #C7C1B3; line-height: 1.4; }
+  .install-banner button.install { display: flex; align-items: center; gap: 6px; background: var(--gold); color: var(--ink); border: none; border-radius: 8px; padding: 9px 14px; font-size: 13px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+  .install-banner button.close { background: none; border: none; color: #8A8578; cursor: pointer; padding: 6px; flex-shrink: 0; }
+
+  @media (min-width: 780px) {
+    .page { padding: 28px 32px 60px; }
+    header.top { flex-direction: row; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; }
+    .statrow { gap: 28px; }
+    .stat { text-align: right; }
+    .body { flex-direction: row; align-items: flex-start; gap: 32px; }
+    .sidebar { width: 210px; flex-shrink: 0; position: sticky; top: 12px; }
+    .semscroll { flex-direction: column; overflow-x: visible; }
+    .cardsgrid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+  }
+  @media (min-width: 1100px) {
+    .cardsgrid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ---------------- grading scale ---------------- */
+const SCALE = [
+  { min: 85, letter: "A", point: 4.0 },
+  { min: 70, letter: "B", point: 3.0 },
+  { min: 60, letter: "C", point: 2.0 },
+  { min: 45, letter: "D", point: 1.0 },
+  { min: 0,  letter: "E", point: 0.0 },
+];
+function getGrade(nilai) { for (const s of SCALE) if (nilai >= s.min) return s; return SCALE[SCALE.length-1]; }
+function tierColor(letter) {
+  if (letter === "A") return "#8A9A5B";
+  if (letter === "B") return "#B8933D";
+  if (letter === "C") return "#C9772E";
+  return "#A6483C";
+}
+const WEIGHT_KEYS = ["kehadiran","tugas","uts","uas"];
+const WEIGHT_LABELS = { kehadiran: "Kehadiran", tugas: "Tugas", uts: "UTS", uas: "UAS" };
+const uid = () => Math.random().toString(36).slice(2, 10);
+const STORAGE_KEY = "rekap-nilai:v1";
+
+function defaultSubject() {
+  return { id: uid(), name: "Mata Kuliah Baru", sks: 3,
+    weights: { kehadiran:10, tugas:20, uts:30, uas:40 },
+    scores:  { kehadiran:0, tugas:0, uts:0, uas:0 } };
+}
+function defaultSemester(name) { return { id: uid(), name, subjects: [] }; }
+function initialState() { return { semesters: [defaultSemester("Semester 1")] }; }
+function finalScore(sub) {
+  const wsum = WEIGHT_KEYS.reduce((a,k)=>a+(Number(sub.weights[k])||0),0);
+  if (wsum === 0) return 0;
+  const raw = WEIGHT_KEYS.reduce((a,k)=>a+(Number(sub.scores[k])||0)*(Number(sub.weights[k])||0),0);
+  return raw / wsum;
+}
+
+/* ---------------- state ---------------- */
+let data = load();
+let activeSemId = data.semesters[0].id;
+let saveTimer = null;
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return initialState();
+}
+function persist() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+  }, 300);
+}
+function activeSem() { return data.semesters.find(s => s.id === activeSemId) || data.semesters[0]; }
+
+/* ---------------- render (structural — only called on add/delete/switch) ---------------- */
+const app = document.getElementById("app");
+
+function render() {
+  const sem = activeSem();
+
+  app.innerHTML = `
+    <div class="page">
+      <header class="top">
+        <div>
+          <div class="eyebrow">BUKU NILAI DIGITAL</div>
+          <h1 class="title">Rekap Nilai</h1>
+        </div>
+        <div class="statrow">
+          <div class="stat"><div class="val big" id="statIpk">0.00</div><div class="lbl">IPK Kumulatif</div></div>
+          <div class="stat"><div class="val" id="statSks">0</div><div class="lbl">Total SKS</div></div>
+          <div class="stat"><div class="val" id="statCount">0</div><div class="lbl">Mata Kuliah</div></div>
+        </div>
+      </header>
+
+      <div class="body">
+        <aside class="sidebar">
+          <div class="semscroll" id="semscroll"></div>
+          <details class="dist" id="distWrap" style="display:none">
+            <summary>&#127891; Sebaran Nilai</summary>
+            <div class="donut-wrap">
+              <div class="donut" id="donut"></div>
+              <div class="legend" id="legend"></div>
+            </div>
+          </details>
+        </aside>
+
+        <main class="main">
+          <div class="chartcard" id="chartcard" style="display:none">
+            <div class="title" id="chartTitle"></div>
+            <div class="barchart" id="barchart"></div>
+          </div>
+
+          <div class="cardsgrid" id="cardsgrid"></div>
+
+          <button class="delsem" id="delsem" style="display:none">&#128465; <span id="delsemLabel"></span></button>
+        </main>
+      </div>
+    </div>
+  `;
+
+  renderSemScroll();
+  renderCards();
+  renderChartCard();
+  updateHeaderStats();
+
+  document.getElementById("delsem").addEventListener("click", () => {
+    if (data.semesters.length <= 1) return;
+    const s = activeSem();
+    data.semesters = data.semesters.filter(x => x.id !== s.id);
+    activeSemId = data.semesters[0].id;
+    render();
+  });
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ---------------- sidebar: semester tabs ---------------- */
+function renderSemScroll() {
+  const wrap = document.getElementById("semscroll");
+  wrap.innerHTML = data.semesters.map(s => `
+    <div class="semitem ${s.id === activeSemId ? "active" : ""}" data-sem="${s.id}">
+      <input value="${escapeHtml(s.name)}" data-rename="${s.id}" autocomplete="off" enterkeyhint="done" />
+      <span class="count">${s.subjects.length}</span>
+    </div>
+  `).join("") + `<button class="addsem" id="addsem">&#43; Semester</button>`;
+
+  wrap.querySelectorAll(".semitem").forEach(el => {
+    el.addEventListener("click", (e) => {
+      if (e.target.matches("input")) return;
+      activeSemId = el.dataset.sem;
+      render();
+    });
+  });
+  wrap.querySelectorAll("[data-rename]").forEach(inp => {
+    inp.addEventListener("click", e => e.stopPropagation());
+    inp.addEventListener("input", e => {
+      const s = data.semesters.find(x => x.id === inp.dataset.rename);
+      s.name = e.target.value;
+      persist();
+      renderChartCard();
+      const label = document.getElementById("delsemLabel");
+      if (label && s.id === activeSemId) label.textContent = `Hapus ${s.name}`;
+    });
+  });
+  document.getElementById("addsem").addEventListener("click", () => {
+    const sNew = defaultSemester(`Semester ${data.semesters.length + 1}`);
+    data.semesters.push(sNew);
+    activeSemId = sNew.id;
+    render();
+  });
+
+  const delBtn = document.getElementById("delsem");
+  if (delBtn) {
+    if (data.semesters.length > 1) {
+      delBtn.style.display = "flex";
+      document.getElementById("delsemLabel").textContent = `Hapus ${activeSem().name}`;
+    } else {
+      delBtn.style.display = "none";
+    }
+  }
+
+  renderDistribution();
+}
+
+/* ---------------- sidebar: distribution donut ---------------- */
+function renderDistribution() {
+  const allSubjects = data.semesters.flatMap(s => s.subjects);
+  const distribution = SCALE.map(s => ({
+    letter: s.letter,
+    count: allSubjects.filter(sub => getGrade(finalScore(sub)).letter === s.letter).length
+  })).filter(d => d.count > 0);
+
+  const distWrap = document.getElementById("distWrap");
+  if (!distribution.length) { distWrap.style.display = "none"; return; }
+  distWrap.style.display = "";
+
+  let acc = 0; const total = allSubjects.length; const parts = [];
+  distribution.forEach(d => {
+    const start = (acc/total)*360; acc += d.count;
+    const end = (acc/total)*360;
+    parts.push(`${tierColor(d.letter)} ${start}deg ${end}deg`);
+  });
+  document.getElementById("donut").style.background = `conic-gradient(${parts.join(", ")})`;
+  document.getElementById("legend").innerHTML = distribution.map(d =>
+    `<div><span class="dot" style="background:${tierColor(d.letter)}"></span>${d.letter} &middot; ${d.count}</div>`
+  ).join("");
+}
+
+/* ---------------- main: bar chart (no inputs — safe to fully replace) ---------------- */
+function renderChartCard() {
+  const sem = activeSem();
+  const container = document.getElementById("chartcard");
+  if (!container) return;
+  if (!sem.subjects.length) { container.style.display = "none"; return; }
+  container.style.display = "";
+  document.getElementById("chartTitle").textContent = `Nilai Akhir — ${sem.name}`;
+  document.getElementById("barchart").innerHTML = sem.subjects.map(s => {
+    const n = finalScore(s);
+    const color = tierColor(getGrade(n).letter);
+    const h = Math.max(4, (n/100)*110);
+    return `<div class="bar-col">
+      <div class="bar-val">${n.toFixed(0)}</div>
+      <div class="bar" style="height:${h}px;background:${color}"></div>
+      <div class="bar-label">${escapeHtml(s.name)}</div>
+    </div>`;
+  }).join("");
+}
+
+/* ---------------- main: subject cards (structural rebuild — only on add/delete) ---------------- */
+function renderCards() {
+  const grid = document.getElementById("cardsgrid");
+  const sem = activeSem();
+  grid.innerHTML = sem.subjects.map(sub => cardHtml(sub)).join("") +
+    `<button class="addcard" id="addcard">&#43;<span>Tambah Mata Kuliah</span></button>`;
+
+  sem.subjects.forEach(sub => wireCard(sub));
+
+  document.getElementById("addcard").addEventListener("click", () => {
+    sem.subjects.push(defaultSubject());
+    persist();
+    renderCards();
+    renderChartCard();
+    updateHeaderStats();
+    renderSemScroll();
+  });
+}
+
+function cardHtml(sub) {
+  const n = finalScore(sub);
+  const wsum = WEIGHT_KEYS.reduce((a,k)=>a+(Number(sub.weights[k])||0),0);
+  const weightOk = wsum === 100;
+  return `
+    <div class="card" data-card="${sub.id}">
+      <div class="card-top">
+        <input class="card-title" value="${escapeHtml(sub.name)}" data-field="name" autocomplete="off" enterkeyhint="done" />
+        <button class="card-del" data-del title="Hapus">&#128465;</button>
+      </div>
+      <label class="sksrow">SKS <input type="number" inputmode="numeric" min="0" max="24" value="${sub.sks}" data-field="sks" autocomplete="off" enterkeyhint="done" /></label>
+
+      <div class="sectionlbl">BOBOT</div>
+      ${WEIGHT_KEYS.map(k => ledgerRowHtml(WEIGHT_LABELS[k], sub.weights[k], "weight", k, "%")).join("")}
+      <div class="weightsum" data-weightsum style="color:${weightOk ? "#6E8B74" : "#A6483C"}">
+        ${weightOk ? "total bobot 100%" : `&#9888; total bobot ${wsum}% (harus 100%)`}
+      </div>
+
+      <div class="sectionlbl">NILAI</div>
+      ${WEIGHT_KEYS.map(k => ledgerRowHtml(WEIGHT_LABELS[k], sub.scores[k], "score", k, "")).join("")}
+
+      <div class="finalrow">
+        <span class="lbl">Nilai Akhir</span>
+        <span class="val" data-finalvalue>${n.toFixed(1)}</span>
+      </div>
+    </div>
+  `;
+}
+function ledgerRowHtml(label, value, group, key, suffix) {
+  return `
+    <div class="ledgerrow">
+      <span class="lbl">${label}</span>
+      <span class="dots"></span>
+      <input type="number" inputmode="decimal" min="0" max="100" value="${value}" data-group="${group}" data-key="${key}" autocomplete="off" enterkeyhint="done" />
+      ${suffix ? `<span class="suffix">${suffix}</span>` : ""}
+    </div>
+  `;
+}
+
+/* ---------------- wiring: every handler here does TARGETED updates only,
+   never rebuilds the cardsgrid — this is what keeps the on-screen keyboard open ---------------- */
+function wireCard(sub) {
+  const card = document.querySelector(`[data-card="${sub.id}"]`);
+  if (!card) return;
+
+  card.querySelector('[data-field="name"]').addEventListener("input", e => {
+    sub.name = e.target.value;
+    persist();
+    renderChartCard();
+  });
+  card.querySelector('[data-field="sks"]').addEventListener("input", e => {
+    sub.sks = e.target.value === "" ? "" : Number(e.target.value);
+    persist();
+    updateHeaderStats();
+  });
+  card.querySelectorAll("[data-group]").forEach(inp => {
+    inp.addEventListener("input", e => {
+      const v = e.target.value === "" ? "" : Number(e.target.value);
+      if (inp.dataset.group === "weight") sub.weights[inp.dataset.key] = v;
+      else sub.scores[inp.dataset.key] = v;
+      persist();
+      updateCardComputed(sub, card);
+      updateHeaderStats();
+      renderChartCard();
+    });
+  });
+  card.querySelector("[data-del]").addEventListener("click", () => {
+    const sem = activeSem();
+    sem.subjects = sem.subjects.filter(s => s.id !== sub.id);
+    persist();
+    renderCards();
+    renderChartCard();
+    updateHeaderStats();
+    renderSemScroll();
+  });
+}
+
+function updateCardComputed(sub, card) {
+  const n = finalScore(sub);
+  const wsum = WEIGHT_KEYS.reduce((a,k)=>a+(Number(sub.weights[k])||0),0);
+  const weightOk = wsum === 100;
+
+  card.querySelector("[data-finalvalue]").textContent = n.toFixed(1);
+  const ws = card.querySelector("[data-weightsum]");
+  ws.style.color = weightOk ? "#6E8B74" : "#A6483C";
+  ws.innerHTML = weightOk ? "total bobot 100%" : `&#9888; total bobot ${wsum}% (harus 100%)`;
+}
+
+function updateHeaderStats() {
+  const allSubjects = data.semesters.flatMap(s => s.subjects);
+  const totalSks = allSubjects.reduce((a,s)=>a+(Number(s.sks)||0),0);
+  const totalPoints = allSubjects.reduce((a,s)=>a+getGrade(finalScore(s)).point*(Number(s.sks)||0),0);
+  const ipk = totalSks > 0 ? totalPoints/totalSks : 0;
+
+  document.getElementById("statIpk").textContent = ipk.toFixed(2);
+  document.getElementById("statSks").textContent = totalSks;
+  document.getElementById("statCount").textContent = allSubjects.length;
+
+  document.querySelectorAll(".semitem .count").forEach(el => {
+    const semId = el.closest(".semitem").dataset.sem;
+    const s = data.semesters.find(x => x.id === semId);
+    if (s) el.textContent = s.subjects.length;
+  });
+
+  renderDistribution();
+}
+
+render();
+
+/* ---------------- install banner ---------------- */
+(function() {
+  function isIos() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+  function isStandalone() {
+    return window.matchMedia?.("(display-mode: standalone)").matches || navigator.standalone === true;
+  }
+  if (isStandalone()) return;
+  if (sessionStorage.getItem("rekap-nilai:install-dismissed")) return;
+
+  let deferredPrompt = null;
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    showBanner(true);
+  });
+  if (isIos()) showBanner(false);
+
+  function showBanner(canInstall) {
+    if (document.getElementById("install-banner")) return;
+    const el = document.createElement("div");
+    el.className = "install-banner";
+    el.id = "install-banner";
+    el.innerHTML = canInstall ? `
+      <div class="txt"><strong>Install Rekap Nilai</strong><span>Buka tanpa browser, bisa dipakai offline.</span></div>
+      <button class="install">&#8681; Install</button>
+      <button class="close">&#10005;</button>
+    ` : `
+      <div class="txt"><strong>Install Rekap Nilai</strong><span>Tap Share di Safari, lalu pilih <strong>Add to Home Screen</strong>.</span></div>
+      <button class="close">&#10005;</button>
+    `;
+    document.body.appendChild(el);
+    el.querySelector(".close").addEventListener("click", () => {
+      el.remove();
+      sessionStorage.setItem("rekap-nilai:install-dismissed", "1");
+    });
+    el.querySelector(".install")?.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      el.remove();
+    });
+  }
+})();
+
+/* ---------------- register service worker (offline support) ---------------- */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
