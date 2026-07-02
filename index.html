@@ -109,8 +109,6 @@
     flex: 1; min-width: 0; color: var(--ink); background: transparent; margin-bottom: 2px;
   }
   .card-del { background: none; border: none; color: var(--muted); cursor: pointer; padding: 10px; margin: -10px -6px -10px 0; flex-shrink: 0; }
-  .sksrow { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 12px; }
-  .sksrow input { width: 44px; font-family: var(--mono); font-size: 14px; border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; color: var(--ink); }
   .sectionlbl { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; color: var(--muted); margin-top: 10px; margin-bottom: 4px; }
   .ledgerrow { display: flex; align-items: baseline; gap: 4px; padding: 6px 0; }
   .ledgerrow .lbl { font-family: var(--sans); font-size: 13.5px; white-space: nowrap; }
@@ -181,7 +179,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STORAGE_KEY = "rekap-nilai:v1";
 
 function defaultSubject() {
-  return { id: uid(), name: "Mata Kuliah Baru", sks: 3,
+  return { id: uid(), name: "Mata Kuliah Baru",
     weights: { kehadiran:10, tugas:20, uts:30, uas:40 },
     scores:  { kehadiran:0, tugas:0, uts:0, uas:0 } };
 }
@@ -192,6 +190,18 @@ function finalScore(sub) {
   if (wsum === 0) return 0;
   const raw = WEIGHT_KEYS.reduce((a,k)=>a+(Number(sub.scores[k])||0)*(Number(sub.weights[k])||0),0);
   return raw / wsum;
+}
+// IP semester dihitung tanpa SKS (rata-rata biasa antar matkul di semester itu)
+function semesterStats(sem) {
+  const subs = sem.subjects;
+  if (!subs.length) return { ip: 0, avgNilai: 0, count: 0 };
+  let sumPoint = 0, sumNilai = 0;
+  subs.forEach(s => {
+    const n = finalScore(s);
+    sumNilai += n;
+    sumPoint += getGrade(n).point;
+  });
+  return { ip: sumPoint / subs.length, avgNilai: sumNilai / subs.length, count: subs.length };
 }
 
 /* ---------------- state ---------------- */
@@ -228,8 +238,8 @@ function render() {
           <h1 class="title">Rekap Nilai</h1>
         </div>
         <div class="statrow">
-          <div class="stat"><div class="val big" id="statIpk">0.00</div><div class="lbl">IPK Kumulatif</div></div>
-          <div class="stat"><div class="val" id="statSks">0</div><div class="lbl">Total SKS</div></div>
+          <div class="stat"><div class="val big" id="statIp">0.00</div><div class="lbl" id="statIpLbl">IP Semester</div></div>
+          <div class="stat"><div class="val" id="statAvg">0.0</div><div class="lbl">Rata-rata Nilai</div></div>
           <div class="stat"><div class="val" id="statCount">0</div><div class="lbl">Mata Kuliah</div></div>
         </div>
       </header>
@@ -399,7 +409,6 @@ function cardHtml(sub) {
         <input class="card-title" value="${escapeHtml(sub.name)}" data-field="name" autocomplete="off" enterkeyhint="done" />
         <button class="card-del" data-del title="Hapus">&#128465;</button>
       </div>
-      <label class="sksrow">SKS <input type="number" inputmode="numeric" min="0" max="24" value="${sub.sks}" data-field="sks" autocomplete="off" enterkeyhint="done" /></label>
 
       <div class="sectionlbl">BOBOT</div>
       ${WEIGHT_KEYS.map(k => ledgerRowHtml(WEIGHT_LABELS[k], sub.weights[k], "weight", k, "%")).join("")}
@@ -439,11 +448,6 @@ function wireCard(sub) {
     persist();
     renderChartCard();
   });
-  card.querySelector('[data-field="sks"]').addEventListener("input", e => {
-    sub.sks = e.target.value === "" ? "" : Number(e.target.value);
-    persist();
-    updateHeaderStats();
-  });
   card.querySelectorAll("[data-group]").forEach(inp => {
     inp.addEventListener("input", e => {
       const v = e.target.value === "" ? "" : Number(e.target.value);
@@ -478,14 +482,13 @@ function updateCardComputed(sub, card) {
 }
 
 function updateHeaderStats() {
-  const allSubjects = data.semesters.flatMap(s => s.subjects);
-  const totalSks = allSubjects.reduce((a,s)=>a+(Number(s.sks)||0),0);
-  const totalPoints = allSubjects.reduce((a,s)=>a+getGrade(finalScore(s)).point*(Number(s.sks)||0),0);
-  const ipk = totalSks > 0 ? totalPoints/totalSks : 0;
+  const sem = activeSem();
+  const stats = semesterStats(sem);
 
-  document.getElementById("statIpk").textContent = ipk.toFixed(2);
-  document.getElementById("statSks").textContent = totalSks;
-  document.getElementById("statCount").textContent = allSubjects.length;
+  document.getElementById("statIp").textContent = stats.ip.toFixed(2);
+  document.getElementById("statAvg").textContent = stats.avgNilai.toFixed(1);
+  document.getElementById("statCount").textContent = stats.count;
+  document.getElementById("statIpLbl").textContent = `IP Semester · ${sem.name}`;
 
   document.querySelectorAll(".semitem .count").forEach(el => {
     const semId = el.closest(".semitem").dataset.sem;
